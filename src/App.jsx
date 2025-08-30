@@ -7,11 +7,11 @@ import Footer from "./components/Footer";
 export default function App() {
   const [info, setInfo] = useState(null);
   const [error, setError] = useState("");
-
+  const API_BASE = import.meta.env.VITE_API_BASE_URL;
   const handleSearch = async (number) => {
     try {
       const response = await fetch(
-        `https://mobile-location-tracker.onrender.com/api/lookup?number=${encodeURIComponent(number)}`
+        `${API_BASE}/api/lookup?number=${encodeURIComponent(number)}`
       );
       const data = await response.json();
 
