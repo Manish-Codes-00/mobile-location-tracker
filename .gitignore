@@ -13,6 +13,12 @@ dist
 dist-ssr
 *.local
 
+.env.local
+
+# system files
+.DS_Store
+Thumbs.db
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
