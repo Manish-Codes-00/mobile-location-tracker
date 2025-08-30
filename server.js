@@ -17,7 +17,6 @@ app.get("/api/lookup", async (req, res) => {
   if (!number) return res.status(400).json({ error: "Phone number required" });
 
   try {
-
     // 1. Lookup phone number with NumVerify
     const numverifyResponse = await fetch(
       `http://apilayer.net/api/validate?access_key=${NUMVERIFY_API_KEY}&number=${encodeURIComponent(
@@ -26,22 +25,37 @@ app.get("/api/lookup", async (req, res) => {
     );
     const numverifyData = await numverifyResponse.json();
 
-    if (!numverifyData.valid) {
-      return res.status(400).json({ error: "Invalid phone number" });
+    console.log("NumVerify Response:", numverifyData);
+
+    // fallback values
+    let location = "";
+    let country = "";
+    let carrier = "";
+    let formattedNumber = number;
+    let countryCode = "in";
+
+    if (numverifyData && numverifyData.valid) {
+      location = numverifyData.location || "";
+      country = numverifyData.country_name || "";
+      carrier = numverifyData.carrier || "";
+      formattedNumber = numverifyData.international_format || number;
+      countryCode = numverifyData.country_code?.toLowerCase() || "in";
+    } else {
+      // fallback if invalid or free plan restricted
+      country = numverifyData?.country_name || "India";
+      location = country; // use country as fallback
+      console.warn("NumVerify marked number invalid, using fallback:", location);
     }
 
-    // 2. Use OpenCage to get coordinates (bias results using NumVerify country code)
-    const location = `${numverifyData.location || ""}, ${
-      numverifyData.country_name || ""
-    }`;
-    const countryCode = numverifyData.country_code?.toLowerCase() || "in";
-
+    // 2. Use OpenCage to get coordinates
     const geoResponse = await fetch(
       `https://api.opencagedata.com/geocode/v1/json?q=${encodeURIComponent(
         location
       )}&key=${OPENCAGE_API_KEY}&countrycode=${countryCode}`
     );
     const geoData = await geoResponse.json();
+
+    console.log("OpenCage Response:", geoData);
 
     if (!geoData.results.length) {
       return res
@@ -52,15 +66,15 @@ app.get("/api/lookup", async (req, res) => {
     const { lat, lng } = geoData.results[0].geometry;
 
     res.json({
-      number: numverifyData.international_format,
-      location: numverifyData.location,
-      country: numverifyData.country_name,
-      carrier: numverifyData.carrier,
+      number: formattedNumber,
+      location: location,
+      country: country,
+      carrier: carrier,
       latitude: lat,
       longitude: lng,
     });
   } catch (error) {
-    console.error(error);
+    console.error("Server error:", error);
     res.status(500).json({ error: "Error fetching location" });
   }
 });
