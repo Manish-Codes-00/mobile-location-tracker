@@ -11,7 +11,7 @@ export default function App() {
   const handleSearch = async (number) => {
     try {
       const response = await fetch(
-        `http://localhost:5000/api/lookup?number=${encodeURIComponent(number)}`
+        `https://mobile-location-tracker.onrender.com/api/lookup?number=${encodeURIComponent(number)}`
       );
       const data = await response.json();
 
